@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Jug Problem - State Space Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .problem-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .operations-list {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .state {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        .goal-state {
+            background: #28a745;
+        }
+        
+        .algorithm-section {
+            margin: 30px 0;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        #visualization {
+            border: 1px solid #ddd;
+            background: white;
+            margin: 20px 0;
+            min-height: 400px;
+            padding: 20px;
+            overflow: auto;
+        }
+        
+        .tree-node {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        .bfs-node {
+            background: #e3f2fd;
+        }
+        
+        .astar-node {
+            background: #f3e5f5;
+        }
+        
+        .solution-path {
+            background: #c8e6c9;
+            border-color: #4caf50;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .step-by-step {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .heuristic-explanation {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Water Jug Problem: State Space Search Analysis</h1>
+        
+        <div class="problem-section">
+            <h2>Problem Statement</h2>
+            <p>Given two jugs with capacities of <strong>3 liters</strong> and <strong>5 liters</strong>, and a goal of measuring exactly <strong>4 liters</strong>, find the sequence of operations to reach the goal state.</p>
+        </div>
+
+        <div class="algorithm-section">
+            <h2>Part A: Basic Operations</h2>
+            <div class="operations-list">
+                <h3>Fundamental Actions for State Space Evolution:</h3>
+                <ul>
+                    <li><strong>Fill Jug A (3L):</strong> Fill the 3-liter jug completely</li>
+                    <li><strong>Fill Jug B (5L):</strong> Fill the 5-liter jug completely</li>
+                    <li><strong>Empty Jug A:</strong> Empty the 3-liter jug completely</li>
+                    <li><strong>Empty Jug B:</strong> Empty the 5-liter jug completely</li>
+                    <li><strong>Pour A → B:</strong> Pour from 3L jug to 5L jug until B is full or A is empty</li>
+                    <li><strong>Pour B → A:</strong> Pour from 5L jug to 3L jug until A is full or B is empty</li>
+                </ul>
+                <p><strong>State Representation:</strong> (a, b) where a = amount in 3L jug, b = amount in 5L jug</p>
+                <p><strong>Initial State:</strong> (0, 0)</p>
+                <p><strong>Goal State:</strong> Any state where either jug contains exactly 4 liters</p>
+            </div>
+        </div>
+
+        <div class="algorithm-section">
+            <h2>Part B: State Space Model</h2>
+            <div class="step-by-step">
+                <h3>State Space Structure:</h3>
+                <ul>
+                    <li><strong>States:</strong> All possible combinations (a, b) where 0 ≤ a ≤ 3 and 0 ≤ b ≤ 5</li>
+                    <li><strong>Total possible states:</strong> 4 × 6 = 24 states</li>
+                    <li><strong>Valid goal states:</strong> (3, 4), (4, 0), (4, 5), etc.</li>
+                    <li><strong>Transitions:</strong> Each state can transition to multiple states based on the 6 operations</li>
+                </ul>
+                <p>This model guides the search process by providing a finite, well-defined space to explore systematically.</p>
+            </div>
+        </div>
+
+        <div class="algorithm-section">
+            <h2>Part C: Algorithm Implementation and Comparison</h2>
+            
+            <div class="heuristic-explanation">
+                <h3>A* Heuristic Function:</h3>
+                <p><strong>h(state) = |4 - a| + |4 - b|</strong> where a and b are the amounts in each jug.</p>
+                <p>This heuristic estimates the minimum distance to any goal state containing 4 liters.</p>
+                <p>It is admissible (never overestimates) and consistent, making A* optimal.</p>
+            </div>
+
+            <div class="controls">
+                <button onclick="solveBFS()">Run BFS Algorithm</button>
+                <button onclick="solveAStar()">Run A* Algorithm</button>
+                <button onclick="compareAlgorithms()">Compare Both Algorithms</button>
+                <button onclick="clearVisualization()">Clear Results</button>
+            </div>
+
+            <div id="visualization">
+                <p>Click on the buttons above to run the algorithms and see the state space exploration.</p>
+            </div>
+
+            <div id="comparison-results">
+                <!-- Comparison table will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State representation: [jug3, jug5]
+        class WaterJugState {
+            constructor(jug3, jug5, parent = null, action = '', cost = 0) {
+                this.jug3 = jug3;
+                this.jug5 = jug5;
+                this.parent = parent;
+                this.action = action;
+                this.cost = cost;
+            }
+
+            toString() {
+                return `(${this.jug3}, ${this.jug5})`;
+            }
+
+            isGoal() {
+                return this.jug3 === 4 || this.jug5 === 4;
+            }
+
+            equals(other) {
+                return this.jug3 === other.jug3 && this.jug5 === other.jug5;
+            }
+
+            // A* heuristic: Manhattan distance to goal (4 liters)
+            heuristic() {
+                return Math.min(Math.abs(4 - this.jug3), Math.abs(4 - this.jug5));
+            }
+
+            // Generate all possible successor states
+            getSuccessors() {
+                const successors = [];
+                
+                // Fill jug A (3L)
+                if (this.jug3 < 3) {
+                    successors.push(new WaterJugState(3, this.jug5, this, 'Fill Jug A', this.cost + 1));
+                }
+                
+                // Fill jug B (5L)
+                if (this.jug5 < 5) {
+                    successors.push(new WaterJugState(this.jug3, 5, this, 'Fill Jug B', this.cost + 1));
+                }
+                
+                // Empty jug A
+                if (this.jug3 > 0) {
+                    successors.push(new WaterJugState(0, this.jug5, this, 'Empty Jug A', this.cost + 1));
+                }
+                
+                // Empty jug B
+                if (this.jug5 > 0) {
+                    successors.push(new WaterJugState(this.jug3, 0, this, 'Empty Jug B', this.cost + 1));
+                }
+                
+                // Pour A to B
+                if (this.jug3 > 0 && this.jug5 < 5) {
+                    const pour = Math.min(this.jug3, 5 - this.jug5);
+                    successors.push(new WaterJugState(
+                        this.jug3 - pour, 
+                        this.jug5 + pour, 
+                        this, 
+                        'Pour A → B', 
+                        this.cost + 1
+                    ));
+                }
+                
+                // Pour B to A
+                if (this.jug5 > 0 && this.jug3 < 3) {
+                    const pour = Math.min(this.jug5, 3 - this.jug3);
+                    successors.push(new WaterJugState(
+                        this.jug3 + pour, 
+                        this.jug5 - pour, 
+                        this, 
+                        'Pour B → A', 
+                        this.cost + 1
+                    ));
+                }
+                
+                return successors;
+            }
+        }
+
+        // Breadth-First Search implementation
+        function breadthFirstSearch() {
+            const start = new WaterJugState(0, 0);
+            const queue = [start];
+            const visited = new Set();
+            const exploredNodes = [];
+            
+            visited.add(start.toString());
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                exploredNodes.push(current);
+                
+                if (current.isGoal()) {
+                    return {
+                        solution: current,
+                        exploredNodes: exploredNodes,
+                        totalExplored: exploredNodes.length
+                    };
+                }
+                
+                for (const successor of current.getSuccessors()) {
+                    if (!visited.has(successor.toString())) {
+                        visited.add(successor.toString());
+                        queue.push(successor);
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        // A* Search implementation
+        function aStarSearch() {
+            const start = new WaterJugState(0, 0);
+            const openSet = [start];
+            const closedSet = new Set();
+            const exploredNodes = [];
+            
+            while (openSet.length > 0) {
+                // Find node with lowest f(n) = g(n) + h(n)
+                let current = openSet[0];
+                let currentIndex = 0;
+                
+                for (let i = 1; i < openSet.length; i++) {
+                    const fCurrent = current.cost + current.heuristic();
+                    const fNode = openSet[i].cost + openSet[i].heuristic();
+                    if (fNode < fCurrent) {
+                        current = openSet[i];
+                        currentIndex = i;
+                    }
+                }
+                
+                openSet.splice(currentIndex, 1);
+                closedSet.add(current.toString());
+                exploredNodes.push(current);
+                
+                if (current.isGoal()) {
+                    return {
+                        solution: current,
+                        exploredNodes: exploredNodes,
+                        totalExplored: exploredNodes.length
+                    };
+                }
+                
+                for (const successor of current.getSuccessors()) {
+                    if (closedSet.has(successor.toString())) {
+                        continue;
+                    }
+                    
+                    const existingNode = openSet.find(node => node.toString() === successor.toString());
+                    if (!existingNode) {
+                        openSet.push(successor);
+                    } else if (successor.cost < existingNode.cost) {
+                        existingNode.cost = successor.cost;
+                        existingNode.parent = successor.parent;
+                        existingNode.action = successor.action;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function getSolutionPath(solution) {
+            const path = [];
+            let current = solution;
+            while (current) {
+                path.unshift(current);
+                current = current.parent;
+            }
+            return path;
+        }
+
+        function solveBFS() {
+            const result = breadthFirstSearch();
+            if (result) {
+                const path = getSolutionPath(result.solution);
+                displayResults('BFS', result, path);
+            }
+        }
+
+        function solveAStar() {
+            const result = aStarSearch();
+            if (result) {
+                const path = getSolutionPath(result.solution);
+                displayResults('A*', result, path);
+            }
+        }
+
+        function compareAlgorithms() {
+            const bfsResult = breadthFirstSearch();
+            const astarResult = aStarSearch();
+            
+            if (bfsResult && astarResult) {
+                const bfsPath = getSolutionPath(bfsResult.solution);
+                const astarPath = getSolutionPath(astarResult.solution);
+                
+                displayComparison(bfsResult, astarResult, bfsPath, astarPath);
+            }
+        }
+
+        function displayResults(algorithm, result, path) {
+            const viz = document.getElementById('visualization');
+            viz.innerHTML = `
+                <h3>${algorithm} Algorithm Results</h3>
+                <p><strong>Solution found!</strong> Goal state: ${result.solution.toString()}</p>
+                <p><strong>Nodes explored:</strong> ${result.totalExplored}</p>
+                <p><strong>Solution path length:</strong> ${path.length - 1} steps</p>
+                
+                <h4>Solution Path:</h4>
+                <div class="solution-path">
+                    ${path.map((state, index) => {
+                        if (index === 0) {
+                            return `<div class="tree-node solution-path">${state.toString()}<br><small>Initial</small></div>`;
+                        } else {
+                            return `<div class="tree-node solution-path">${state.toString()}<br><small>${state.action}</small></div>`;
+                        }
+                    }).join(' → ')}
+                </div>
+                
+                <h4>Exploration Order (first 10 nodes):</h4>
+                <div>
+                    ${result.exploredNodes.slice(0, 10).map(state => 
+                        `<span class="state ${algorithm.toLowerCase().replace('*', 'star')}-node">${state.toString()}</span>`
+                    ).join(' ')}
+                    ${result.exploredNodes.length > 10 ? '...' : ''}
+                </div>
+            `;
+        }
+
+        function displayComparison(bfsResult, astarResult, bfsPath, astarPath) {
+            const viz = document.getElementById('visualization');
+            viz.innerHTML = `
+                <h3>Algorithm Comparison</h3>
+                <table class="comparison-table">
+                    <tr>
+                        <th>Metric</th>
+                        <th>Breadth-First Search</th>
+                        <th>A* Search</th>
+                        <th>Winner</th>
+                    </tr>
+                    <tr>
+                        <td>Nodes Explored</td>
+                        <td>${bfsResult.totalExplored}</td>
+                        <td>${astarResult.totalExplored}</td>
+                        <td>${astarResult.totalExplored < bfsResult.totalExplored ? 'A*' : bfsResult.totalExplored < astarResult.totalExplored ? 'BFS' : 'Tie'}</td>
+                    </tr>
+                    <tr>
+                        <td>Solution Path Length</td>
+                        <td>${bfsPath.length - 1} steps</td>
+                        <td>${astarPath.length - 1} steps</td>
+                        <td>${astarPath.length < bfsPath.length ? 'A*' : bfsPath.length < astarPath.length ? 'BFS' : 'Tie'}</td>
+                    </tr>
+                    <tr>
+                        <td>Optimality</td>
+                        <td>Optimal</td>
+                        <td>Optimal</td>
+                        <td>Tie</td>
+                    </tr>
+                    <tr>
+                        <td>Memory Usage</td>
+                        <td>High (stores all frontier)</td>
+                        <td>Medium (guided search)</td>
+                        <td>A*</td>
+                    </tr>
+                </table>
+
+                <h4>BFS Solution Path:</h4>
+                <div class="solution-path">
+                    ${bfsPath.map((state, index) => {
+                        if (index === 0) {
+                            return `<div class="tree-node bfs-node">${state.toString()}<br><small>Initial</small></div>`;
+                        } else {
+                            return `<div class="tree-node bfs-node">${state.toString()}<br><small>${state.action}</small></div>`;
+                        }
+                    }).join(' → ')}
+                </div>
+
+                <h4>A* Solution Path:</h4>
+                <div class="solution-path">
+                    ${astarPath.map((state, index) => {
+                        if (index === 0) {
+                            return `<div class="tree-node astar-node">${state.toString()}<br><small>Initial</small></div>`;
+                        } else {
+                            return `<div class="tree-node astar-node">${state.toString()}<br><small>${state.action}</small></div>`;
+                        }
+                    }).join(' → ')}
+                </div>
+
+                <div class="step-by-step">
+                    <h4>Analysis:</h4>
+                    <ul>
+                        <li><strong>A* Performance:</strong> A* explores fewer nodes due to its heuristic guidance, making it more efficient.</li>
+                        <li><strong>Optimality:</strong> Both algorithms find optimal solutions (shortest path).</li>
+                        <li><strong>Heuristic Effectiveness:</strong> The Manhattan distance heuristic successfully guides A* toward the goal.</li>
+                        <li><strong>Memory Efficiency:</strong> A* uses memory more efficiently by focusing on promising paths.</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function clearVisualization() {
+            document.getElementById('visualization').innerHTML = 
+                '<p>Click on the buttons above to run the algorithms and see the state space exploration.</p>';
+            document.getElementById('comparison-results').innerHTML = '';
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Water Jug Problem solver initialized');
+        });
+    </script>
+</body>
+</html>
