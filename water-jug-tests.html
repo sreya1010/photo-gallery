@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Water Jug Problem Tests</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background-color: #d4edda; border-color: #c3e6cb; }
+        .fail { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>Water Jug Problem Algorithm Tests</h1>
+    <div id="test-results"></div>
+
+    <script>
+        // Copy the WaterJugState class and algorithms from the main file
+        class WaterJugState {
+            constructor(jug3, jug5, parent = null, action = '', cost = 0) {
+                this.jug3 = jug3;
+                this.jug5 = jug5;
+                this.parent = parent;
+                this.action = action;
+                this.cost = cost;
+            }
+
+            toString() {
+                return `(${this.jug3}, ${this.jug5})`;
+            }
+
+            isGoal() {
+                return this.jug3 === 4 || this.jug5 === 4;
+            }
+
+            equals(other) {
+                return this.jug3 === other.jug3 && this.jug5 === other.jug5;
+            }
+
+            heuristic() {
+                return Math.min(Math.abs(4 - this.jug3), Math.abs(4 - this.jug5));
+            }
+
+            getSuccessors() {
+                const successors = [];
+                
+                if (this.jug3 < 3) {
+                    successors.push(new WaterJugState(3, this.jug5, this, 'Fill Jug A', this.cost + 1));
+                }
+                
+                if (this.jug5 < 5) {
+                    successors.push(new WaterJugState(this.jug3, 5, this, 'Fill Jug B', this.cost + 1));
+                }
+                
+                if (this.jug3 > 0) {
+                    successors.push(new WaterJugState(0, this.jug5, this, 'Empty Jug A', this.cost + 1));
+                }
+                
+                if (this.jug5 > 0) {
+                    successors.push(new WaterJugState(this.jug3, 0, this, 'Empty Jug B', this.cost + 1));
+                }
+                
+                if (this.jug3 > 0 && this.jug5 < 5) {
+                    const pour = Math.min(this.jug3, 5 - this.jug5);
+                    successors.push(new WaterJugState(
+                        this.jug3 - pour, 
+                        this.jug5 + pour, 
+                        this, 
+                        'Pour A → B', 
+                        this.cost + 1
+                    ));
+                }
+                
+                if (this.jug5 > 0 && this.jug3 < 3) {
+                    const pour = Math.min(this.jug5, 3 - this.jug3);
+                    successors.push(new WaterJugState(
+                        this.jug3 + pour, 
+                        this.jug5 - pour, 
+                        this, 
+                        'Pour B → A', 
+                        this.cost + 1
+                    ));
+                }
+                
+                return successors;
+            }
+        }
+
+        function breadthFirstSearch() {
+            const start = new WaterJugState(0, 0);
+            const queue = [start];
+            const visited = new Set();
+            const exploredNodes = [];
+            
+            visited.add(start.toString());
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                exploredNodes.push(current);
+                
+                if (current.isGoal()) {
+                    return {
+                        solution: current,
+                        exploredNodes: exploredNodes,
+                        totalExplored: exploredNodes.length
+                    };
+                }
+                
+                for (const successor of current.getSuccessors()) {
+                    if (!visited.has(successor.toString())) {
+                        visited.add(successor.toString());
+                        queue.push(successor);
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function aStarSearch() {
+            const start = new WaterJugState(0, 0);
+            const openSet = [start];
+            const closedSet = new Set();
+            const exploredNodes = [];
+            
+            while (openSet.length > 0) {
+                let current = openSet[0];
+                let currentIndex = 0;
+                
+                for (let i = 1; i < openSet.length; i++) {
+                    const fCurrent = current.cost + current.heuristic();
+                    const fNode = openSet[i].cost + openSet[i].heuristic();
+                    if (fNode < fCurrent) {
+                        current = openSet[i];
+                        currentIndex = i;
+                    }
+                }
+                
+                openSet.splice(currentIndex, 1);
+                closedSet.add(current.toString());
+                exploredNodes.push(current);
+                
+                if (current.isGoal()) {
+                    return {
+                        solution: current,
+                        exploredNodes: exploredNodes,
+                        totalExplored: exploredNodes.length
+                    };
+                }
+                
+                for (const successor of current.getSuccessors()) {
+                    if (closedSet.has(successor.toString())) {
+                        continue;
+                    }
+                    
+                    const existingNode = openSet.find(node => node.toString() === successor.toString());
+                    if (!existingNode) {
+                        openSet.push(successor);
+                    } else if (successor.cost < existingNode.cost) {
+                        existingNode.cost = successor.cost;
+                        existingNode.parent = successor.parent;
+                        existingNode.action = successor.action;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function getSolutionPath(solution) {
+            const path = [];
+            let current = solution;
+            while (current) {
+                path.unshift(current);
+                current = current.parent;
+            }
+            return path;
+        }
+
+        // Test functions
+        function runTests() {
+            const results = [];
+            
+            // Test 1: Both algorithms find a solution
+            const bfsResult = breadthFirstSearch();
+            const astarResult = aStarSearch();
+            
+            results.push({
+                name: "BFS finds solution",
+                passed: bfsResult !== null && bfsResult.solution.isGoal(),
+                details: bfsResult ? `Found goal state: ${bfsResult.solution.toString()}` : "No solution found"
+            });
+            
+            results.push({
+                name: "A* finds solution",
+                passed: astarResult !== null && astarResult.solution.isGoal(),
+                details: astarResult ? `Found goal state: ${astarResult.solution.toString()}` : "No solution found"
+            });
+            
+            // Test 2: Solution paths are valid
+            if (bfsResult && astarResult) {
+                const bfsPath = getSolutionPath(bfsResult.solution);
+                const astarPath = getSolutionPath(astarResult.solution);
+                
+                results.push({
+                    name: "BFS solution path is valid",
+                    passed: bfsPath.length > 0 && bfsPath[0].toString() === "(0, 0)" && bfsPath[bfsPath.length - 1].isGoal(),
+                    details: `Path length: ${bfsPath.length - 1} steps`
+                });
+                
+                results.push({
+                    name: "A* solution path is valid",
+                    passed: astarPath.length > 0 && astarPath[0].toString() === "(0, 0)" && astarPath[astarPath.length - 1].isGoal(),
+                    details: `Path length: ${astarPath.length - 1} steps`
+                });
+                
+                // Test 3: A* explores fewer or equal nodes (efficiency test)
+                results.push({
+                    name: "A* explores fewer or equal nodes than BFS",
+                    passed: astarResult.totalExplored <= bfsResult.totalExplored,
+                    details: `BFS: ${bfsResult.totalExplored} nodes, A*: ${astarResult.totalExplored} nodes`
+                });
+                
+                // Test 4: Both find optimal solutions (same path length)
+                results.push({
+                    name: "Both algorithms find optimal solutions",
+                    passed: bfsPath.length === astarPath.length,
+                    details: `BFS: ${bfsPath.length - 1} steps, A*: ${astarPath.length - 1} steps`
+                });
+            }
+            
+            // Test 5: State operations work correctly
+            const state = new WaterJugState(0, 0);
+            const successors = state.getSuccessors();
+            
+            results.push({
+                name: "Initial state generates correct successors",
+                passed: successors.length === 2 && 
+                        successors.some(s => s.toString() === "(3, 0)") && 
+                        successors.some(s => s.toString() === "(0, 5)"),
+                details: `Generated ${successors.length} successors: ${successors.map(s => s.toString()).join(", ")}`
+            });
+            
+            // Test 6: Goal state detection
+            const goalState1 = new WaterJugState(3, 4);
+            const goalState2 = new WaterJugState(0, 4);
+            const nonGoalState = new WaterJugState(1, 2);
+            
+            results.push({
+                name: "Goal state detection works correctly",
+                passed: goalState1.isGoal() && goalState2.isGoal() && !nonGoalState.isGoal(),
+                details: `(3,4): ${goalState1.isGoal()}, (0,4): ${goalState2.isGoal()}, (1,2): ${nonGoalState.isGoal()}`
+            });
+            
+            return results;
+        }
+
+        // Display test results
+        function displayResults(results) {
+            const container = document.getElementById('test-results');
+            container.innerHTML = '';
+            
+            let passCount = 0;
+            results.forEach(result => {
+                if (result.passed) passCount++;
+                
+                const div = document.createElement('div');
+                div.className = `test ${result.passed ? 'pass' : 'fail'}`;
+                div.innerHTML = `
+                    <strong>${result.name}</strong>: ${result.passed ? 'PASS' : 'FAIL'}<br>
+                    <small>${result.details}</small>
+                `;
+                container.appendChild(div);
+            });
+            
+            const summary = document.createElement('div');
+            summary.innerHTML = `<h2>Summary: ${passCount}/${results.length} tests passed</h2>`;
+            container.insertBefore(summary, container.firstChild);
+        }
+
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const results = runTests();
+            displayResults(results);
+        });
+    </script>
+</body>
+</html>
